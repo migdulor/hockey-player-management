@@ -75,7 +75,7 @@ const FormularioAsistencias = () => {
     ];
     
     setJugadoras(jugadorasReales);
-    setMensaje('✅ Datos cargados: 37 jugadoras (18 de 7ma + 18 de 6ta)');
+    setMensaje('✅ Aplicación lista - 37 jugadoras cargadas (18 de 7ma + 18 de 6ta)');
     setIsLoading(false);
   };
 
@@ -85,7 +85,7 @@ const FormularioAsistencias = () => {
 
     try {
       setIsLoading(true);
-      setMensaje('🔍 Cargando datos desde Google Sheets...');
+      setMensaje('🔍 Conectando con Google Sheets...');
       
       const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Asistencias!A:Z?key=${apiKey}`;
       
@@ -113,7 +113,7 @@ const FormularioAsistencias = () => {
           const indiceFecha = encabezados.findIndex(header => header === fechaSeleccionada);
           setColumnaFecha(indiceFecha);
           
-          setMensaje('✅ Datos cargados correctamente desde Google Sheets');
+          setMensaje('✅ Conectado con Google Sheets - Datos sincronizados');
         } else {
           cargarDatosManual();
         }
@@ -299,7 +299,7 @@ const FormularioAsistencias = () => {
   const { presentes, ausentes, tardanzas } = contarAsistencias();
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white">
+    <div className="max-w-4xl mx-auto p-6 bg-white min-h-screen">
       <div className="bg-blue-600 text-white p-6 rounded-lg mb-6">
         <div className="flex justify-between items-center">
           <div>
@@ -307,7 +307,7 @@ const FormularioAsistencias = () => {
               <Users className="w-6 h-6" />
               Control de Asistencias - TLTC 2025
             </h1>
-            <p className="text-blue-100 mt-2">7ma y 6ta División - Conectado con Google Sheets</p>
+            <p className="text-blue-100 mt-2">7ma y 6ta División - Sistema Web</p>
           </div>
           <div className="flex gap-2">
             <button
@@ -560,6 +560,12 @@ const FormularioAsistencias = () => {
           <Upload className="w-4 h-4" />
           Asistencias marcadas: {Object.keys(asistencias).length}
         </div>
+      </div>
+
+      {/* Footer */}
+      <div className="mt-8 text-center text-gray-500 text-sm">
+        <p>© 2025 TLTC - Control de Asistencias</p>
+        <p>Desarrollado para 7ma y 6ta División</p>
       </div>
     </div>
   );
