@@ -33,3 +33,7 @@ dist-ssr
 # API Keys (security)
 api-keys.txt
 *.key
+
+# Lock files (let GitHub Actions generate them)
+package-lock.json
+yarn.lock
