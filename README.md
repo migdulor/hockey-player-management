@@ -124,10 +124,21 @@ npm run build
 
 ## 🚀 Despliegue
 
-El proyecto se despliega automáticamente en GitHub Pages mediante GitHub Actions cuando se hace push a la rama `main`.
+La aplicación se despliega automáticamente en GitHub Pages mediante GitHub Actions cuando se hace push a la rama `main`.
+
+### Estado del despliegue:
+[![Deploy to GitHub Pages](https://github.com/migdulor/formulario-asistencias-tltc/actions/workflows/deploy.yml/badge.svg)](https://github.com/migdulor/formulario-asistencias-tltc/actions/workflows/deploy.yml)
 
 ### URL de producción:
 https://migdulor.github.io/formulario-asistencias-tltc/
+
+## 🔧 Troubleshooting
+
+Si la aplicación no se despliega:
+
+1. **Verificar GitHub Actions**: Ve a la pestaña Actions del repositorio
+2. **Habilitar GitHub Pages**: Settings → Pages → Source: GitHub Actions
+3. **Verificar permisos**: El workflow necesita permisos de escritura en Pages
 
 ## 🤝 Contribuir
 
