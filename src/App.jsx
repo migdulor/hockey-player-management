@@ -19,21 +19,25 @@ const App = () => {
     try {
       setIsLoading(true);
       const response = await fetch(`${SCRIPT_URL}?action=read`);
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success && result.data) {
-          const jugadorasExtraidas = result.data.slice(1).map((fila, index) => ({
-            id: index + 1,
-            idJugadora: fila[0]?.toString() || '',
-            nombre: fila[1] || '',
-            nombreCorto: fila[2] || '',
-            division: fila[3] || ''
-          })).filter(jugadora => jugadora.nombre);
-          setJugadoras(jugadorasExtraidas);
-        }
+      if (!response.ok) {
+        throw new Error('No se pudo cargar las jugadoras');
+      }
+      const result = await response.json();
+      if (result.success && result.data) {
+        const jugadorasExtraidas = result.data.slice(1).map((fila, index) => ({
+          id: index + 1,
+          idJugadora: fila[0]?.toString() || '',
+          nombre: fila[1] || '',
+          nombreCorto: fila[2] || '',
+          division: fila[3] || ''
+        })).filter(jugadora => jugadora.nombre);
+        setJugadoras(jugadorasExtraidas);
+      } else {
+        throw new Error('Respuesta inválida del servidor');
       }
     } catch (error) {
       console.error('Error:', error);
+      // Puedes mostrar un mensaje en pantalla si lo deseas
     } finally {
       setIsLoading(false);
     }
