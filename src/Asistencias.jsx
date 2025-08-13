@@ -33,6 +33,7 @@ const Asistencias = ({ jugadoras: jugadorasProps }) => {
         fecha: fecha
       });
       
+      console.log('Consultando asistencias para fecha:', fecha); // Debug log
       const response = await fetch(`${SCRIPT_URL}?${params.toString()}`);
       
       if (response.ok) {
@@ -41,26 +42,37 @@ const Asistencias = ({ jugadoras: jugadorasProps }) => {
 
         if (result.success && result.asistencias) {
           const nuevasAsistencias = {};
-          Object.entries(result.asistencias).forEach(([jugadoraId, estado]) => {
-            // Convertir los estados a formato local
-            switch (estado.toUpperCase()) {
+          // Asegurarse de que result.asistencias sea un objeto
+          const asistenciasData = typeof result.asistencias === 'string' 
+            ? JSON.parse(result.asistencias) 
+            : result.asistencias;
+
+          // Iterar sobre el objeto de asistencias
+          Object.entries(asistenciasData).forEach(([jugadoraId, estado]) => {
+            // Convertir los estados a formato local y manejar diferentes formatos
+            const estadoUpper = estado?.toString().toUpperCase().trim();
+            switch (estadoUpper) {
               case 'P':
+              case 'PRESENTE':
                 nuevasAsistencias[jugadoraId] = 'presente';
                 break;
               case 'A':
+              case 'AUSENTE':
                 nuevasAsistencias[jugadoraId] = 'ausente';
                 break;
               case 'T':
+              case 'TARDANZA':
                 nuevasAsistencias[jugadoraId] = 'tardanza';
                 break;
               default:
                 console.log(`Estado no reconocido para jugadora ${jugadoraId}:`, estado);
             }
           });
+
           console.log('Asistencias procesadas:', nuevasAsistencias); // Debug log
           setAsistencias(nuevasAsistencias);
         } else {
-          console.log('No hay asistencias para esta fecha'); // Debug log
+          console.log('No hay asistencias para esta fecha o formato inválido'); // Debug log
           setAsistencias({});
         }
       } else {
