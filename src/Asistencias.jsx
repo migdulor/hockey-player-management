@@ -37,23 +37,39 @@ const Asistencias = ({ jugadoras: jugadorasProps }) => {
       
       if (response.ok) {
         const result = await response.json();
+        console.log('Respuesta del servidor:', result); // Debug log
+
         if (result.success && result.asistencias) {
           const nuevasAsistencias = {};
-          Object.keys(result.asistencias).forEach(jugadoraId => {
-            const estado = result.asistencias[jugadoraId];
-            switch (estado) {
-              case 'P': nuevasAsistencias[jugadoraId] = 'presente'; break;
-              case 'A': nuevasAsistencias[jugadoraId] = 'ausente'; break;
-              case 'T': nuevasAsistencias[jugadoraId] = 'tardanza'; break;
+          Object.entries(result.asistencias).forEach(([jugadoraId, estado]) => {
+            // Convertir los estados a formato local
+            switch (estado.toUpperCase()) {
+              case 'P':
+                nuevasAsistencias[jugadoraId] = 'presente';
+                break;
+              case 'A':
+                nuevasAsistencias[jugadoraId] = 'ausente';
+                break;
+              case 'T':
+                nuevasAsistencias[jugadoraId] = 'tardanza';
+                break;
+              default:
+                console.log(`Estado no reconocido para jugadora ${jugadoraId}:`, estado);
             }
           });
+          console.log('Asistencias procesadas:', nuevasAsistencias); // Debug log
           setAsistencias(nuevasAsistencias);
         } else {
+          console.log('No hay asistencias para esta fecha'); // Debug log
           setAsistencias({});
         }
+      } else {
+        console.error('Error en la respuesta del servidor:', response.status);
+        setAsistencias({});
       }
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error al cargar asistencias:', error);
+      setAsistencias({});
     } finally {
       setCargandoAsistencias(false);
     }
