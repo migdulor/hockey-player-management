@@ -32,24 +32,25 @@ const Asistencias = ({ jugadoras: jugadorasProps }) => {
         action: 'readByDate',
         fecha: fecha
       });
-      
-      console.log('Consultando asistencias para fecha:', fecha); // Debug log
+
+      console.log('Consultando asistencias para fecha:', fecha);
       const response = await fetch(`${SCRIPT_URL}?${params.toString()}`);
-      
+
       if (response.ok) {
         const result = await response.json();
-        console.log('Respuesta del servidor:', result); // Debug log
+        console.log('Respuesta del servidor:', result);
 
-        if (result.success && result.asistencias) {
+        // Mostrar error si el backend lo envía
+        if (result.success === false && result.error) {
+          setMensaje(`❌ Error del servidor: ${result.error}`);
+          setAsistencias({});
+          return;
+        }
+
+        // Validar que asistencias sea un objeto y tenga datos
+        if (result.success && result.asistencias && typeof result.asistencias === 'object' && Object.keys(result.asistencias).length > 0) {
           const nuevasAsistencias = {};
-          // Asegurarse de que result.asistencias sea un objeto
-          const asistenciasData = typeof result.asistencias === 'string' 
-            ? JSON.parse(result.asistencias) 
-            : result.asistencias;
-
-          // Iterar sobre el objeto de asistencias
-          Object.entries(asistenciasData).forEach(([jugadoraId, estado]) => {
-            // Convertir los estados a formato local y manejar diferentes formatos
+          Object.entries(result.asistencias).forEach(([jugadoraId, estado]) => {
             const estadoUpper = estado?.toString().toUpperCase().trim();
             switch (estadoUpper) {
               case 'P':
@@ -68,19 +69,18 @@ const Asistencias = ({ jugadoras: jugadorasProps }) => {
                 console.log(`Estado no reconocido para jugadora ${jugadoraId}:`, estado);
             }
           });
-
-          console.log('Asistencias procesadas:', nuevasAsistencias); // Debug log
           setAsistencias(nuevasAsistencias);
+          setMensaje('');
         } else {
-          console.log('No hay asistencias para esta fecha o formato inválido'); // Debug log
+          setMensaje('⚠️ No hay asistencias registradas para esta fecha');
           setAsistencias({});
         }
       } else {
-        console.error('Error en la respuesta del servidor:', response.status);
+        setMensaje('❌ Error en la respuesta del servidor');
         setAsistencias({});
       }
     } catch (error) {
-      console.error('Error al cargar asistencias:', error);
+      setMensaje('❌ Error al cargar asistencias');
       setAsistencias({});
     } finally {
       setCargandoAsistencias(false);
