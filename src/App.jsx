@@ -1,151 +1,123 @@
-import React, { useState, useEffect } from 'react';
-import { Calendar, Users, Save, Download, Upload, CheckCircle, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Calendar, Users, Save, Download, TrendingUp, Shield, ChevronRight, Home, BarChart, FileText, Clock, MapPin, Trophy, X } from 'lucide-react';
 
-const FormularioAsistencias = () => {
-  // URL del Google Apps Script configurado
-  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxIW7BOmLmPrjUsokhsI4p4mi1wdg9JPpPFs8KTUmBhbgetp_RfaLew8RFB6V3BajrpmQ/exec';
-  
-  // Estados principales
-  const [fechaSeleccionada, setFechaSeleccionada] = useState(new Date().toISOString().split('T')[0]);
-  const [divisionFiltro, setDivisionFiltro] = useState('todas');
-  const [asistencias, setAsistencias] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
-  const [mensaje, setMensaje] = useState('');
-  
-  // Datos de la planilla
+// URL del Google Apps Script
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxIW7BOmLmPrjUsokhsI4p4mi1wdg9JPpPFs8KTUmBhbgetp_RfaLew8RFB6V3BajrpmQ/exec';
+
+// Componente principal con navegación
+const App = () => {
+  const [currentPage, setCurrentPage] = useState('asistencias');
   const [jugadoras, setJugadoras] = useState([]);
-  const [datosHoja, setDatosHoja] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    cargarDatosHoja();
-  }, [fechaSeleccionada]); // Recargar cuando cambia la fecha
+    cargarJugadoras();
+  }, []);
 
-  // Cargar datos desde Google Sheets usando Apps Script
-  const cargarDatosHoja = async () => {
+  const cargarJugadoras = async () => {
     try {
       setIsLoading(true);
-      setMensaje('🔍 Conectando con Google Sheets...');
-      
       const response = await fetch(`${SCRIPT_URL}?action=read`);
-      
       if (response.ok) {
         const result = await response.json();
-        
         if (result.success && result.data) {
-          setDatosHoja(result.data);
-          
           const jugadorasExtraidas = result.data.slice(1).map((fila, index) => ({
             id: index + 1,
             idJugadora: fila[0]?.toString() || '',
             nombre: fila[1] || '',
             division: fila[2] || ''
           })).filter(jugadora => jugadora.nombre);
-          
           setJugadoras(jugadorasExtraidas);
-          
-          // Cargar asistencias existentes para la fecha seleccionada
-          const encabezados = result.data[0];
-          const indiceFecha = encabezados.findIndex(header => header === fechaSeleccionada);
-          
-          if (indiceFecha >= 0) {
-            const asistenciasExistentes = {};
-            jugadorasExtraidas.forEach((jugadora, index) => {
-              const valorAsistencia = result.data[index + 1][indiceFecha];
-              if (valorAsistencia) {
-                let estado = '';
-                switch (valorAsistencia) {
-                  case 'P': estado = 'presente'; break;
-                  case 'A': estado = 'ausente'; break;
-                  case 'T': estado = 'tardanza'; break;
-                }
-                if (estado) {
-                  asistenciasExistentes[jugadora.id] = estado;
-                }
-              }
-            });
-            setAsistencias(asistenciasExistentes);
-            
-            if (Object.keys(asistenciasExistentes).length > 0) {
-              setMensaje(`✅ Datos cargados - ${Object.keys(asistenciasExistentes).length} asistencias previas encontradas`);
-            } else {
-              setMensaje(`✅ Conectado - ${jugadorasExtraidas.length} jugadoras cargadas`);
-            }
-          } else {
-            setAsistencias({});
-            setMensaje(`✅ Conectado - ${jugadorasExtraidas.length} jugadoras cargadas`);
-          }
-        } else {
-          cargarDatosManual();
         }
-      } else {
-        console.log('Error al acceder a Google Sheets, usando datos locales');
-        cargarDatosManual();
       }
     } catch (error) {
       console.error('Error:', error);
-      cargarDatosManual();
     } finally {
       setIsLoading(false);
-      setTimeout(() => setMensaje(''), 3000);
     }
   };
 
-  // Cargar datos manuales como respaldo
-  const cargarDatosManual = () => {
-    const jugadorasReales = [
-      // 7ma División
-      { id: 1, idJugadora: "1", nombre: "Abdo Martina", division: "7ma" },
-      { id: 2, idJugadora: "2", nombre: "Alzueta Esteban Zoe", division: "7ma" },
-      { id: 3, idJugadora: "3", nombre: "Ayala Sofia", division: "7ma" },
-      { id: 4, idJugadora: "4", nombre: "Buriek Ernestina", division: "7ma" },
-      { id: 5, idJugadora: "5", nombre: "Buriek Sol", division: "7ma" },
-      { id: 6, idJugadora: "6", nombre: "Cuadrado Justina", division: "7ma" },
-      { id: 7, idJugadora: "7", nombre: "Fernandez Luz María", division: "7ma" },
-      { id: 8, idJugadora: "8", nombre: "Fernández correa Morena", division: "7ma" },
-      { id: 9, idJugadora: "9", nombre: "Kravtzov Mosqueira Luz", division: "7ma" },
-      { id: 10, idJugadora: "10", nombre: "Oliver Ledesma Guillermina", division: "7ma" },
-      { id: 11, idJugadora: "11", nombre: "Oviedo Tobchi Agustina", division: "7ma" },
-      { id: 12, idJugadora: "12", nombre: "Pando Victoria", division: "7ma" },
-      { id: 13, idJugadora: "13", nombre: "Rodríguez ledesma Rosario", division: "7ma" },
-      { id: 14, idJugadora: "14", nombre: "Roqué Malena", division: "7ma" },
-      { id: 15, idJugadora: "15", nombre: "Sagra Catalina", division: "7ma" },
-      { id: 16, idJugadora: "16", nombre: "Tapie Leonor", division: "7ma" },
-      { id: 17, idJugadora: "17", nombre: "Villacorta Ana Sofia", division: "7ma" },
-      { id: 18, idJugadora: "18", nombre: "Zayun Trinidad", division: "7ma" },
-      
-      // 6ta División  
-      { id: 19, idJugadora: "19", nombre: "Alzueta Esteban Lara", division: "6ta" },
-      { id: 20, idJugadora: "20", nombre: "Benci Lourdes", division: "6ta" },
-      { id: 21, idJugadora: "21", nombre: "Benito Ángela", division: "6ta" },
-      { id: 22, idJugadora: "22", nombre: "Cano Ledesma Amparo", division: "6ta" },
-      { id: 23, idJugadora: "23", nombre: "Cano Ledesma Pilar", division: "6ta" },
-      { id: 24, idJugadora: "24", nombre: "Corbalán Costilla Anita", division: "6ta" },
-      { id: 25, idJugadora: "25", nombre: "Coria Vignolo Maria Candelaria", division: "6ta" },
-      { id: 26, idJugadora: "26", nombre: "D'Andrea Candelaria", division: "6ta" },
-      { id: 27, idJugadora: "27", nombre: "Fanjul Staffolani Guadalupe", division: "6ta" },
-      { id: 28, idJugadora: "28", nombre: "Fuentes Solana", division: "6ta" },
-      { id: 29, idJugadora: "29", nombre: "González Terraf Rocío", division: "6ta" },
-      { id: 30, idJugadora: "30", nombre: "López Islas Valentina", division: "6ta" },
-      { id: 31, idJugadora: "31", nombre: "Méndez waisman Mora", division: "6ta" },
-      { id: 32, idJugadora: "32", nombre: "Morano Posse Sofia Candelaria", division: "6ta" },
-      { id: 33, idJugadora: "33", nombre: "Pando Lucia", division: "6ta" },
-      { id: 34, idJugadora: "34", nombre: "Rodríguez Ledesma Agustina Maria", division: "6ta" },
-      { id: 35, idJugadora: "35", nombre: "Romano Olivia María", division: "6ta" },
-      { id: 36, idJugadora: "36", nombre: "Sánchez Noli Federica", division: "6ta" },
-      { id: 37, idJugadora: "37", nombre: "Torres Ana Paula", division: "6ta" }
-    ];
-    
-    setJugadoras(jugadorasReales);
-    setMensaje('⚠️ Usando datos locales - Verifica la conexión con Google Sheets');
-    setIsLoading(false);
-  };
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header con navegación */}
+      <header className="bg-blue-900 text-white shadow-lg">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Shield className="w-8 h-8" />
+              <div>
+                <h1 className="text-2xl font-bold">TLTC Hockey 2025</h1>
+                <p className="text-blue-200 text-sm">Sistema de Gestión - 7ma y 6ta División</p>
+              </div>
+            </div>
+          </div>
+          
+          {/* Navegación */}
+          <nav className="mt-4 flex gap-2">
+            <button
+              onClick={() => setCurrentPage('asistencias')}
+              className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
+                currentPage === 'asistencias' 
+                  ? 'bg-blue-700 text-white' 
+                  : 'bg-blue-800 text-blue-200 hover:bg-blue-700'
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              Asistencias
+            </button>
+            <button
+              onClick={() => setCurrentPage('estadisticas')}
+              className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
+                currentPage === 'estadisticas' 
+                  ? 'bg-blue-700 text-white' 
+                  : 'bg-blue-800 text-blue-200 hover:bg-blue-700'
+              }`}
+            >
+              <BarChart className="w-4 h-4" />
+              Estadísticas
+            </button>
+            <button
+              onClick={() => setCurrentPage('formacion')}
+              className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
+                currentPage === 'formacion' 
+                  ? 'bg-blue-700 text-white' 
+                  : 'bg-blue-800 text-blue-200 hover:bg-blue-700'
+              }`}
+            >
+              <Trophy className="w-4 h-4" />
+              Formación
+            </button>
+          </nav>
+        </div>
+      </header>
 
-  // Filtrar jugadoras según división
+      {/* Contenido principal */}
+      <main className="max-w-7xl mx-auto px-4 py-6">
+        {currentPage === 'asistencias' && <PaginaAsistencias jugadoras={jugadoras} />}
+        {currentPage === 'estadisticas' && <PaginaEstadisticas jugadoras={jugadoras} />}
+        {currentPage === 'formacion' && <PaginaFormacion jugadoras={jugadoras} />}
+      </main>
+    </div>
+  );
+};
+
+// Página de Asistencias (tu código actual)
+const PaginaAsistencias = ({ jugadoras: jugadorasProps }) => {
+  const [fechaSeleccionada, setFechaSeleccionada] = useState(new Date().toISOString().split('T')[0]);
+  const [divisionFiltro, setDivisionFiltro] = useState('todas');
+  const [asistencias, setAsistencias] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [mensaje, setMensaje] = useState('');
+  const [jugadoras, setJugadoras] = useState(jugadorasProps);
+
+  useEffect(() => {
+    setJugadoras(jugadorasProps);
+  }, [jugadorasProps]);
+
   const jugadorasFiltradas = jugadoras.filter(jugadora => 
     divisionFiltro === 'todas' || jugadora.division === divisionFiltro
   );
 
-  // Manejar cambio de asistencia
   const handleAsistenciaChange = (jugadoraId, estado) => {
     setAsistencias(prev => ({
       ...prev,
@@ -153,7 +125,6 @@ const FormularioAsistencias = () => {
     }));
   };
 
-  // Marcar todas como presentes/ausentes
   const marcarTodas = (estado) => {
     const nuevasAsistencias = {};
     jugadorasFiltradas.forEach(jugadora => {
@@ -162,13 +133,11 @@ const FormularioAsistencias = () => {
     setAsistencias(prev => ({ ...prev, ...nuevasAsistencias }));
   };
 
-  // Guardar en Google Sheets usando Apps Script
   const guardarEnGoogleSheets = async () => {
     try {
       setIsLoading(true);
       setMensaje('💾 Guardando asistencias...');
       
-      // Preparar datos de asistencias por ID de jugadora
       const asistenciasData = {};
       jugadoras.forEach(jugadora => {
         const estado = asistencias[jugadora.id];
@@ -186,13 +155,11 @@ const FormularioAsistencias = () => {
       });
       
       if (Object.keys(asistenciasData).length === 0) {
-        setMensaje('⚠️ No hay asistencias marcadas para guardar');
+        setMensaje('⚠️ No hay asistencias marcadas');
         setIsLoading(false);
-        setTimeout(() => setMensaje(''), 3000);
-        return false;
+        return;
       }
       
-      // Enviar datos al Apps Script
       const params = new URLSearchParams({
         action: 'write',
         fecha: fechaSeleccionada,
@@ -204,300 +171,792 @@ const FormularioAsistencias = () => {
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
-          setMensaje(`✅ Asistencias guardadas exitosamente para ${fechaSeleccionada}`);
-          // Recargar los datos después de guardar
-          setTimeout(() => cargarDatosHoja(), 1000);
-          return true;
-        } else {
-          setMensaje(`❌ Error: ${result.error || 'Error desconocido'}`);
-          return false;
+          setMensaje(`✅ Asistencias guardadas para ${fechaSeleccionada}`);
+          setAsistencias({});
         }
-      } else {
-        setMensaje('❌ Error al conectar con Google Sheets');
-        return false;
       }
     } catch (error) {
       console.error('Error:', error);
-      setMensaje('❌ Error de conexión. Verifica tu conexión a internet');
-      return false;
+      setMensaje('❌ Error al guardar');
     } finally {
       setIsLoading(false);
-      setTimeout(() => setMensaje(''), 5000);
+      setTimeout(() => setMensaje(''), 3000);
     }
   };
 
-  // Exportar CSV
-  const exportarCSV = () => {
-    if (jugadoras.length === 0) {
-      alert('No hay datos para exportar');
-      return;
-    }
-
-    let csvContent = 'IDJugadora,Nombre,División,Fecha,Estado\n';
-    
-    jugadoras.forEach(jugadora => {
-      const estado = asistencias[jugadora.id];
-      if (estado && estado !== 'no-marcado') {
-        let estadoTexto = '';
-        switch (estado) {
-          case 'presente': estadoTexto = 'Presente'; break;
-          case 'ausente': estadoTexto = 'Ausente'; break;
-          case 'tardanza': estadoTexto = 'Tardanza'; break;
-        }
-        csvContent += `${jugadora.idJugadora},"${jugadora.nombre}",${jugadora.division},${fechaSeleccionada},${estadoTexto}\n`;
-      }
-    });
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `asistencias_TLTC_${fechaSeleccionada}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-  };
-
-  // Contar asistencias
   const contarAsistencias = () => {
-    const presentes = Object.values(asistencias).filter(estado => estado === 'presente').length;
-    const ausentes = Object.values(asistencias).filter(estado => estado === 'ausente').length;
-    const tardanzas = Object.values(asistencias).filter(estado => estado === 'tardanza').length;
+    const presentes = Object.values(asistencias).filter(e => e === 'presente').length;
+    const ausentes = Object.values(asistencias).filter(e => e === 'ausente').length;
+    const tardanzas = Object.values(asistencias).filter(e => e === 'tardanza').length;
     return { presentes, ausentes, tardanzas };
   };
 
   const { presentes, ausentes, tardanzas } = contarAsistencias();
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white min-h-screen">
-      <div className="bg-blue-600 text-white p-6 rounded-lg mb-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Users className="w-6 h-6" />
-              Control de Asistencias - TLTC 2025
-            </h1>
-            <p className="text-blue-100 mt-2">7ma y 6ta División - Sistema Web</p>
-          </div>
-          <button
-            onClick={cargarDatosHoja}
-            disabled={isLoading}
-            className="flex items-center gap-2 bg-blue-500 hover:bg-blue-400 px-4 py-2 rounded transition-colors"
-          >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-            Actualizar
-          </button>
-        </div>
-      </div>
-
-      {/* Mensaje de estado */}
+    <div className="space-y-6">
       {mensaje && (
-        <div className={`p-4 rounded-lg mb-4 transition-all ${
+        <div className={`p-4 rounded-lg ${
           mensaje.includes('❌') || mensaje.includes('⚠️') 
-            ? 'bg-red-100 text-red-800 border border-red-300' 
-            : 'bg-green-100 text-green-800 border border-green-300'
+            ? 'bg-red-100 text-red-800' 
+            : 'bg-green-100 text-green-800'
         }`}>
           {mensaje}
         </div>
       )}
 
-      {/* Información de la planilla */}
-      <div className="bg-gray-50 p-4 rounded-lg mb-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-          <div>
-            <span className="font-medium">Total jugadoras:</span> {jugadoras.length}
-          </div>
-          <div>
-            <span className="font-medium">7ma División:</span> {jugadoras.filter(j => j.division === '7ma').length}
-          </div>
-          <div>
-            <span className="font-medium">6ta División:</span> {jugadoras.filter(j => j.division === '6ta').length}
-          </div>
-          <div>
-            <span className="font-medium">Fecha:</span> {fechaSeleccionada}
-          </div>
-        </div>
-      </div>
-
-      {/* Configuración del registro */}
-      <div className="bg-gray-50 p-4 rounded-lg mb-6">
+      <div className="bg-white p-6 rounded-lg shadow">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              <Calendar className="w-4 h-4 inline mr-1" />
               Fecha
             </label>
             <input
               type="date"
               value={fechaSeleccionada}
-              onChange={(e) => {
-                setFechaSeleccionada(e.target.value);
-                setAsistencias({});
-              }}
-              className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+              onChange={(e) => setFechaSeleccionada(e.target.value)}
+              className="w-full p-2 border rounded"
             />
           </div>
-
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">División</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              División
+            </label>
             <select
               value={divisionFiltro}
               onChange={(e) => setDivisionFiltro(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+              className="w-full p-2 border rounded"
+            >
+              <option value="todas">Todas</option>
+              <option value="7ma">7ma División</option>
+              <option value="6ta">6ta División</option>
+            </select>
+          </div>
+          <div className="flex items-end gap-2">
+            <button
+              onClick={() => marcarTodas('presente')}
+              className="px-3 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+            >
+              ✓ Todas
+            </button>
+            <button
+              onClick={() => marcarTodas('ausente')}
+              className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+            >
+              ✗ Todas
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-4">
+        <div className="bg-green-100 p-4 rounded-lg text-center">
+          <div className="text-2xl font-bold text-green-800">{presentes}</div>
+          <div className="text-sm text-green-600">Presentes</div>
+        </div>
+        <div className="bg-red-100 p-4 rounded-lg text-center">
+          <div className="text-2xl font-bold text-red-800">{ausentes}</div>
+          <div className="text-sm text-red-600">Ausentes</div>
+        </div>
+        <div className="bg-yellow-100 p-4 rounded-lg text-center">
+          <div className="text-2xl font-bold text-yellow-800">{tardanzas}</div>
+          <div className="text-sm text-yellow-600">Tardanzas</div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="max-h-96 overflow-y-auto">
+          {jugadorasFiltradas.map((jugadora) => (
+            <div key={jugadora.id} className="px-4 py-3 border-b hover:bg-gray-50 flex justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${
+                  jugadora.division === '7ma' ? 'bg-blue-500' : 'bg-purple-500'
+                }`}>
+                  {jugadora.idJugadora}
+                </div>
+                <div>
+                  <div className="font-medium">{jugadora.nombre}</div>
+                  <div className="text-sm text-gray-500">{jugadora.division}</div>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleAsistenciaChange(jugadora.id, 'presente')}
+                  className={`px-3 py-1 rounded text-sm ${
+                    asistencias[jugadora.id] === 'presente'
+                      ? 'bg-green-500 text-white'
+                      : 'bg-gray-100 hover:bg-green-100'
+                  }`}
+                >
+                  Presente
+                </button>
+                <button
+                  onClick={() => handleAsistenciaChange(jugadora.id, 'tardanza')}
+                  className={`px-3 py-1 rounded text-sm ${
+                    asistencias[jugadora.id] === 'tardanza'
+                      ? 'bg-yellow-500 text-white'
+                      : 'bg-gray-100 hover:bg-yellow-100'
+                  }`}
+                >
+                  Tardanza
+                </button>
+                <button
+                  onClick={() => handleAsistenciaChange(jugadora.id, 'ausente')}
+                  className={`px-3 py-1 rounded text-sm ${
+                    asistencias[jugadora.id] === 'ausente'
+                      ? 'bg-red-500 text-white'
+                      : 'bg-gray-100 hover:bg-red-100'
+                  }`}
+                >
+                  Ausente
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <button
+        onClick={guardarEnGoogleSheets}
+        disabled={isLoading}
+        className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
+      >
+        {isLoading ? 'Guardando...' : 'Guardar en Google Sheets'}
+      </button>
+    </div>
+  );
+};
+
+// Página de Estadísticas
+const PaginaEstadisticas = ({ jugadoras }) => {
+  const [stats, setStats] = useState({});
+  const [divisionFiltro, setDivisionFiltro] = useState('todas');
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    cargarEstadisticas();
+  }, []);
+
+  const cargarEstadisticas = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`${SCRIPT_URL}?action=getStats`);
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setStats(result.stats || {});
+        }
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const jugadorasFiltradas = jugadoras.filter(j => 
+    divisionFiltro === 'todas' || j.division === divisionFiltro
+  );
+
+  const calcularPorcentaje = (jugadoraId) => {
+    const stat = stats[jugadoraId];
+    if (!stat || stat.total === 0) return 0;
+    return Math.round((stat.presentes / stat.total) * 100);
+  };
+
+  // Calcular estadísticas por división
+  const calcularEstadisticasDivision = (division) => {
+    const jugadorasDivision = jugadoras.filter(j => j.division === division);
+    let totalPresentes = 0;
+    let totalAusentes = 0;
+    let totalTardanzas = 0;
+    let totalEntrenamientos = 0;
+
+    jugadorasDivision.forEach(jugadora => {
+      const stat = stats[jugadora.idJugadora];
+      if (stat) {
+        totalPresentes += stat.presentes || 0;
+        totalAusentes += stat.ausentes || 0;
+        totalTardanzas += stat.tardanzas || 0;
+        totalEntrenamientos = Math.max(totalEntrenamientos, stat.total || 0);
+      }
+    });
+
+    const totalAsistencias = totalPresentes + totalAusentes + totalTardanzas;
+    const porcentajeAsistencia = totalAsistencias > 0 
+      ? Math.round((totalPresentes / totalAsistencias) * 100) 
+      : 0;
+
+    return {
+      totalPresentes,
+      totalAusentes,
+      totalTardanzas,
+      totalEntrenamientos,
+      porcentajeAsistencia,
+      jugadoras: jugadorasDivision.length
+    };
+  };
+
+  const stats7ma = calcularEstadisticasDivision('7ma');
+  const stats6ta = calcularEstadisticasDivision('6ta');
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white p-6 rounded-lg shadow">
+        <h2 className="text-xl font-bold mb-4">Estadísticas de Asistencia</h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              División
+            </label>
+            <select
+              value={divisionFiltro}
+              onChange={(e) => setDivisionFiltro(e.target.value)}
+              className="w-full p-2 border rounded"
             >
               <option value="todas">Todas las divisiones</option>
               <option value="7ma">7ma División</option>
               <option value="6ta">6ta División</option>
             </select>
           </div>
+        </div>
 
-          <div className="flex items-end gap-2">
-            <button
-              onClick={() => marcarTodas('presente')}
-              className="px-3 py-2 bg-green-500 text-white rounded text-sm hover:bg-green-600 transition-colors"
-            >
-              ✓ Todas
-            </button>
-            <button
-              onClick={() => marcarTodas('ausente')}
-              className="px-3 py-2 bg-red-500 text-white rounded text-sm hover:bg-red-600 transition-colors"
-            >
-              ✗ Todas
-            </button>
-          </div>
-
-          <div className="flex items-end">
-            <div className="flex items-center gap-2 text-sm text-green-600">
-              <CheckCircle className="w-4 h-4" />
-              {jugadoras.length > 0 ? 'Google Sheets conectado' : 'Conectando...'}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Resumen de asistencias */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-green-100 p-4 rounded-lg text-center border border-green-200">
-          <div className="text-2xl font-bold text-green-800">{presentes}</div>
-          <div className="text-sm text-green-600">Presentes</div>
-        </div>
-        <div className="bg-red-100 p-4 rounded-lg text-center border border-red-200">
-          <div className="text-2xl font-bold text-red-800">{ausentes}</div>
-          <div className="text-sm text-red-600">Ausentes</div>
-        </div>
-        <div className="bg-yellow-100 p-4 rounded-lg text-center border border-yellow-200">
-          <div className="text-2xl font-bold text-yellow-800">{tardanzas}</div>
-          <div className="text-sm text-yellow-600">Tardanzas</div>
-        </div>
-      </div>
-
-      {/* Lista de jugadoras */}
-      <div className="bg-white border rounded-lg overflow-hidden mb-6">
-        <div className="bg-gray-50 px-4 py-3 border-b">
-          <h3 className="font-semibold text-gray-800">
-            Lista de Jugadoras {divisionFiltro !== 'todas' && `- ${divisionFiltro} División`}
-          </h3>
-        </div>
-        
-        <div className="max-h-96 overflow-y-auto">
-          {jugadorasFiltradas.length > 0 ? (
-            jugadorasFiltradas.map((jugadora) => (
-              <div key={jugadora.id} className="px-4 py-3 border-b hover:bg-gray-50 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${
-                    jugadora.division === '7ma' ? 'bg-blue-500' : 'bg-purple-500'
-                  }`}>
-                    {jugadora.idJugadora}
-                  </div>
-                  <div>
-                    <div className="font-medium text-gray-900">{jugadora.nombre}</div>
-                    <div className="text-sm text-gray-500">{jugadora.division} División</div>
+        {/* Gráfico de barras simple */}
+        <div className="space-y-4">
+          {jugadorasFiltradas.map(jugadora => {
+            const porcentaje = calcularPorcentaje(jugadora.idJugadora);
+            const stat = stats[jugadora.idJugadora] || { presentes: 0, ausentes: 0, tardanzas: 0, total: 0 };
+            
+            return (
+              <div key={jugadora.id} className="border-b pb-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-medium">{jugadora.nombre}</span>
+                  <span className="text-sm text-gray-600">
+                    {porcentaje}% asistencia
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-6 relative overflow-hidden">
+                  <div 
+                    className="bg-green-500 h-full transition-all duration-500 flex items-center justify-center text-white text-xs"
+                    style={{ width: `${porcentaje}%` }}
+                  >
+                    {porcentaje > 10 && `${porcentaje}%`}
                   </div>
                 </div>
-
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleAsistenciaChange(jugadora.id, 'presente')}
-                    className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                      asistencias[jugadora.id] === 'presente'
-                        ? 'bg-green-500 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-green-100'
-                    }`}
-                  >
-                    ✓ Presente
-                  </button>
-                  <button
-                    onClick={() => handleAsistenciaChange(jugadora.id, 'tardanza')}
-                    className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                      asistencias[jugadora.id] === 'tardanza'
-                        ? 'bg-yellow-500 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-yellow-100'
-                    }`}
-                  >
-                    ⏰ Tardanza
-                  </button>
-                  <button
-                    onClick={() => handleAsistenciaChange(jugadora.id, 'ausente')}
-                    className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                      asistencias[jugadora.id] === 'ausente'
-                        ? 'bg-red-500 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-red-100'
-                    }`}
-                  >
-                    ✗ Ausente
-                  </button>
+                <div className="flex gap-4 mt-2 text-xs text-gray-600">
+                  <span>✓ {stat.presentes} presentes</span>
+                  <span>⏰ {stat.tardanzas} tardanzas</span>
+                  <span>✗ {stat.ausentes} ausentes</span>
+                  <span>Total: {stat.total} entrenamientos</span>
                 </div>
               </div>
-            ))
-          ) : (
-            <div className="p-8 text-center text-gray-500">
-              {isLoading ? 'Cargando jugadoras...' : 'No se encontraron jugadoras.'}
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Resumen por división */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="font-bold text-lg mb-4 text-blue-600">7ma División</h3>
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Jugadoras:</span>
+              <span className="font-medium">{stats7ma.jugadoras}</span>
             </div>
-          )}
+            <div className="flex justify-between">
+              <span className="text-gray-600">% Asistencia promedio:</span>
+              <span className="font-medium">{stats7ma.porcentajeAsistencia}%</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Total entrenamientos:</span>
+              <span className="font-medium">{stats7ma.totalEntrenamientos}</span>
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* Botones de acción */}
-      <div className="flex flex-wrap gap-3">
-        <button
-          onClick={guardarEnGoogleSheets}
-          disabled={isLoading || jugadoras.length === 0}
-          className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-        >
-          {isLoading ? (
-            <>
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              Guardando...
-            </>
-          ) : (
-            <>
-              <Save className="w-4 h-4" />
-              Guardar en Google Sheets
-            </>
-          )}
-        </button>
-
-        <button
-          onClick={exportarCSV}
-          disabled={Object.keys(asistencias).length === 0}
-          className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-        >
-          <Download className="w-4 h-4" />
-          Exportar CSV
-        </button>
-
-        <div className="text-sm text-gray-600 flex items-center gap-1 px-3 py-3">
-          <Upload className="w-4 h-4" />
-          Asistencias marcadas: {Object.keys(asistencias).length}
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="font-bold text-lg mb-4 text-purple-600">6ta División</h3>
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Jugadoras:</span>
+              <span className="font-medium">{stats6ta.jugadoras}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">% Asistencia promedio:</span>
+              <span className="font-medium">{stats6ta.porcentajeAsistencia}%</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Total entrenamientos:</span>
+              <span className="font-medium">{stats6ta.totalEntrenamientos}</span>
+            </div>
+          </div>
         </div>
-      </div>
-
-      {/* Footer */}
-      <div className="mt-8 text-center text-gray-500 text-sm">
-        <p>© 2025 TLTC - Control de Asistencias</p>
-        <p>Desarrollado para 7ma y 6ta División</p>
       </div>
     </div>
   );
 };
 
-export default FormularioAsistencias;
+// Página de Formación
+const PaginaFormacion = ({ jugadoras }) => {
+  const [formacion, setFormacion] = useState({
+    fecha: new Date().toISOString().split('T')[0],
+    equipoContrario: '',
+    lugar: '',
+    horaCitacion: '',
+    horaPartido: '',
+    arquera: null,
+    defensorDerecha: null,
+    defensorIzquierda: null,
+    central1: null,
+    central2: null,
+    volanteDerecho: null,
+    volanteIzquierdo: null,
+    volanteCentral: null,
+    delanteroDerecha: null,
+    delanteroIzquierda: null,
+    delanteroPunta: null,
+    suplente1: null,
+    suplente2: null,
+    suplente3: null,
+    suplente4: null,
+    suplente5: null,
+    suplente6: null,
+    suplente7: null,
+    suplente8: null,
+    suplente9: null
+  });
+
+  const [jugadoraSeleccionada, setJugadoraSeleccionada] = useState(null);
+  const [posicionSeleccionada, setPosicionSeleccionada] = useState(null);
+  const [mensaje, setMensaje] = useState('');
+  const [vistaPrevia, setVistaPrevia] = useState(false);
+
+  const posiciones = [
+    { key: 'arquera', nombre: 'Arquera', x: 50, y: 90 },
+    { key: 'defensorDerecha', nombre: 'Def. Derecha', x: 75, y: 70 },
+    { key: 'defensorIzquierda', nombre: 'Def. Izquierda', x: 25, y: 70 },
+    { key: 'central1', nombre: 'Central 1', x: 40, y: 65 },
+    { key: 'central2', nombre: 'Central 2', x: 60, y: 65 },
+    { key: 'volanteDerecho', nombre: 'Vol. Derecho', x: 75, y: 45 },
+    { key: 'volanteIzquierdo', nombre: 'Vol. Izquierdo', x: 25, y: 45 },
+    { key: 'volanteCentral', nombre: 'Vol. Central', x: 50, y: 40 },
+    { key: 'delanteroDerecha', nombre: 'Del. Derecha', x: 70, y: 20 },
+    { key: 'delanteroIzquierda', nombre: 'Del. Izquierda', x: 30, y: 20 },
+    { key: 'delanteroPunta', nombre: 'Del. Punta', x: 50, y: 15 }
+  ];
+
+  const suplentes = Array.from({ length: 9 }, (_, i) => ({
+    key: `suplente${i + 1}`,
+    nombre: `Suplente ${i + 1}`
+  }));
+
+  const jugadorasDisponibles = jugadoras.filter(j => {
+    // Verificar si la jugadora ya está seleccionada en alguna posición
+    return !Object.values(formacion).some(val => val === j.nombre);
+  });
+
+  const seleccionarJugadora = (posicionKey) => {
+    setPosicionSeleccionada(posicionKey);
+  };
+
+  const asignarJugadora = (jugadora) => {
+    if (posicionSeleccionada) {
+      setFormacion(prev => ({
+        ...prev,
+        [posicionSeleccionada]: jugadora.nombre
+      }));
+      setPosicionSeleccionada(null);
+    }
+  };
+
+  const quitarJugadora = (posicionKey) => {
+    setFormacion(prev => ({
+      ...prev,
+      [posicionKey]: null
+    }));
+  };
+
+  const guardarFormacion = async () => {
+    try {
+      const params = new URLSearchParams({
+        action: 'savePartido',
+        partido: JSON.stringify(formacion)
+      });
+      
+      const response = await fetch(`${SCRIPT_URL}?${params.toString()}`);
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setMensaje('✅ Formación guardada exitosamente');
+          setTimeout(() => setMensaje(''), 3000);
+        }
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      setMensaje('❌ Error al guardar la formación');
+    }
+  };
+
+  const exportarTexto = () => {
+    let texto = `FORMACIÓN - TLTC HOCKEY\n`;
+    texto += `========================\n\n`;
+    texto += `Fecha: ${formacion.fecha}\n`;
+    texto += `Rival: ${formacion.equipoContrario}\n`;
+    texto += `Lugar: ${formacion.lugar}\n`;
+    texto += `Citación: ${formacion.horaCitacion}\n`;
+    texto += `Partido: ${formacion.horaPartido}\n\n`;
+    texto += `TITULARES\n`;
+    texto += `---------\n`;
+    posiciones.forEach(pos => {
+      texto += `${pos.nombre}: ${formacion[pos.key] || 'Sin asignar'}\n`;
+    });
+    texto += `\nSUPLENTES\n`;
+    texto += `---------\n`;
+    suplentes.forEach(sup => {
+      if (formacion[sup.key]) {
+        texto += `${sup.nombre}: ${formacion[sup.key]}\n`;
+      }
+    });
+
+    const blob = new Blob([texto], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `formacion_${formacion.fecha}_${formacion.equipoContrario || 'partido'}.txt`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="space-y-6">
+      {mensaje && (
+        <div className={`p-4 rounded-lg ${
+          mensaje.includes('❌') ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+        }`}>
+          {mensaje}
+        </div>
+      )}
+
+      {/* Datos del partido */}
+      <div className="bg-white p-6 rounded-lg shadow">
+        <h2 className="text-xl font-bold mb-4">Datos del Partido</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Fecha
+            </label>
+            <input
+              type="date"
+              value={formacion.fecha}
+              onChange={(e) => setFormacion(prev => ({ ...prev, fecha: e.target.value }))}
+              className="w-full p-2 border rounded"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Equipo Contrario
+            </label>
+            <input
+              type="text"
+              value={formacion.equipoContrario}
+              onChange={(e) => setFormacion(prev => ({ ...prev, equipoContrario: e.target.value }))}
+              className="w-full p-2 border rounded"
+              placeholder="Universitario"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Lugar
+            </label>
+            <input
+              type="text"
+              value={formacion.lugar}
+              onChange={(e) => setFormacion(prev => ({ ...prev, lugar: e.target.value }))}
+              className="w-full p-2 border rounded"
+              placeholder="TLTC"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Hora Citación
+            </label>
+            <input
+              type="time"
+              value={formacion.horaCitacion}
+              onChange={(e) => setFormacion(prev => ({ ...prev, horaCitacion: e.target.value }))}
+              className="w-full p-2 border rounded"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Hora Partido
+            </label>
+            <input
+              type="time"
+              value={formacion.horaPartido}
+              onChange={(e) => setFormacion(prev => ({ ...prev, horaPartido: e.target.value }))}
+              className="w-full p-2 border rounded"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Cancha de hockey */}
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-lg font-bold mb-4">Formación Titular</h3>
+          <div className="relative bg-green-500 rounded-lg p-4" style={{ minHeight: '500px' }}>
+            {/* Líneas de la cancha */}
+            <div className="absolute inset-x-4 top-1/2 border-t-2 border-white opacity-50"></div>
+            <div className="absolute left-1/2 top-4 bottom-4 border-l-2 border-white opacity-50"></div>
+            
+            {/* Área grande */}
+            <div className="absolute bottom-0 left-1/4 right-1/4 h-24 border-2 border-white opacity-50 rounded-t-full"></div>
+            
+            {/* Área chica */}
+            <div className="absolute bottom-0 left-1/3 right-1/3 h-16 border-2 border-white opacity-50 rounded-t-full"></div>
+
+            {/* Posiciones */}
+            {posiciones.map(pos => (
+              <div
+                key={pos.key}
+                className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer"
+                style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
+                onClick={() => seleccionarJugadora(pos.key)}
+              >
+                <div className={`w-16 h-16 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                  posicionSeleccionada === pos.key
+                    ? 'bg-yellow-400 text-black scale-110'
+                    : formacion[pos.key]
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white text-gray-700'
+                }`}>
+                  {formacion[pos.key] ? (
+                    <div className="text-center">
+                      <div className="text-[10px]">{formacion[pos.key]?.split(' ')[0]}</div>
+                    </div>
+                  ) : (
+                    <div className="text-[10px] text-center">{pos.nombre}</div>
+                  )}
+                </div>
+                {formacion[pos.key] && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      quitarJugadora(pos.key);
+                    }}
+                    className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Lista de jugadoras y suplentes */}
+        <div className="space-y-6">
+          {/* Jugadoras disponibles */}
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h3 className="text-lg font-bold mb-4">
+              {posicionSeleccionada ? `Seleccionar para: ${posiciones.find(p => p.key === posicionSeleccionada)?.nombre || suplentes.find(s => s.key === posicionSeleccionada)?.nombre}` : 'Jugadoras Disponibles'}
+            </h3>
+            <div className="max-h-64 overflow-y-auto space-y-2">
+              {jugadorasDisponibles.map(jugadora => (
+                <div
+                  key={jugadora.id}
+                  onClick={() => asignarJugadora(jugadora)}
+                  className={`p-2 rounded cursor-pointer flex justify-between items-center ${
+                    posicionSeleccionada 
+                      ? 'hover:bg-blue-100 border border-gray-200'
+                      : 'bg-gray-50 cursor-not-allowed opacity-50'
+                  }`}
+                >
+                  <span className="text-sm">{jugadora.nombre}</span>
+                  <span className={`text-xs px-2 py-1 rounded ${
+                    jugadora.division === '7ma' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
+                  }`}>
+                    {jugadora.division}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Suplentes */}
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h3 className="text-lg font-bold mb-4">Suplentes</h3>
+            <div className="grid grid-cols-3 gap-2">
+              {suplentes.map(sup => (
+                <div
+                  key={sup.key}
+                  onClick={() => seleccionarJugadora(sup.key)}
+                  className={`p-2 rounded text-center cursor-pointer text-sm ${
+                    posicionSeleccionada === sup.key
+                      ? 'bg-yellow-400 text-black'
+                      : formacion[sup.key]
+                      ? 'bg-gray-600 text-white'
+                      : 'bg-gray-100 hover:bg-gray-200'
+                  }`}
+                >
+                  {formacion[sup.key] || sup.nombre}
+                  {formacion[sup.key] && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        quitarJugadora(sup.key);
+                      }}
+                      className="ml-2 text-red-300 hover:text-red-500"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Vista previa */}
+      {vistaPrevia && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold">Vista Previa - Formación</h2>
+                <button
+                  onClick={() => setVistaPrevia(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              {/* Encabezado estilo presentación */}
+              <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-6 rounded-lg mb-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h1 className="text-3xl font-bold mb-2">TLTC HOCKEY</h1>
+                    <p className="text-xl">Sub-19</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold">{formacion.horaPartido || '00:00'}</p>
+                    <p className="text-lg">{formacion.equipoContrario || 'Rival'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Información del partido */}
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className="text-center">
+                  <Calendar className="w-6 h-6 mx-auto mb-2 text-gray-600" />
+                  <p className="text-sm text-gray-600">Fecha</p>
+                  <p className="font-bold">{formacion.fecha}</p>
+                </div>
+                <div className="text-center">
+                  <MapPin className="w-6 h-6 mx-auto mb-2 text-gray-600" />
+                  <p className="text-sm text-gray-600">Lugar</p>
+                  <p className="font-bold">{formacion.lugar || 'Por definir'}</p>
+                </div>
+                <div className="text-center">
+                  <Clock className="w-6 h-6 mx-auto mb-2 text-gray-600" />
+                  <p className="text-sm text-gray-600">Citación</p>
+                  <p className="font-bold">{formacion.horaCitacion || 'Por definir'}</p>
+                </div>
+              </div>
+
+              {/* Formación */}
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <h3 className="font-bold text-lg mb-3 text-blue-600">TITULARES</h3>
+                  <div className="space-y-2">
+                    {posiciones.map((pos, index) => (
+                      <div key={pos.key} className="flex items-center gap-2">
+                        <span className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                          {index + 1}
+                        </span>
+                        <span className="text-sm font-medium">{formacion[pos.key] || 'Por definir'}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg mb-3 text-gray-600">SUPLENTES</h3>
+                  <div className="space-y-2">
+                    {suplentes.filter(sup => formacion[sup.key]).map((sup, index) => (
+                      <div key={sup.key} className="flex items-center gap-2">
+                        <span className="w-8 h-8 bg-gray-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                          {index + 12}
+                        </span>
+                        <span className="text-sm font-medium">{formacion[sup.key]}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end gap-2">
+                <button
+                  onClick={exportarTexto}
+                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                >
+                  Exportar como Texto
+                </button>
+                <button
+                  onClick={() => setVistaPrevia(false)}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Botones de acción */}
+      <div className="flex gap-4">
+        <button
+          onClick={guardarFormacion}
+          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+        >
+          <Save className="w-5 h-5" />
+          Guardar Formación
+        </button>
+        <button
+          onClick={() => setVistaPrevia(true)}
+          className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+        >
+          <FileText className="w-5 h-5" />
+          Vista Previa
+        </button>
+        <button
+          onClick={exportarTexto}
+          className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center gap-2"
+        >
+          <Download className="w-5 h-5" />
+          Exportar Texto
+        </button>
+      </div>
+
+      {/* Instrucciones */}
+      <div className="bg-blue-50 p-4 rounded-lg">
+        <h4 className="font-bold text-blue-900 mb-2">📝 Instrucciones</h4>
+        <ul className="text-sm text-blue-700 space-y-1">
+          <li>• Haz clic en una posición en la cancha o en un lugar de suplente</li>
+          <li>• Luego selecciona la jugadora de la lista</li>
+          <li>• Puedes quitar jugadoras con el botón × </li>
+          <li>• Guarda la formación cuando esté completa</li>
+          <li>• Exporta como texto para compartir por WhatsApp</li>
+        </ul>
+      </div>
+    </div>
+  );
+};
+
+export default App;
