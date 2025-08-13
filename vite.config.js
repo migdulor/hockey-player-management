@@ -3,7 +3,7 @@ const react = require('@vitejs/plugin-react')
 
 // Detectar el entorno de despliegue
 const base = process.env.GITHUB_ACTIONS 
-  ? '/formulario-asistencias-tltc/' // GitHub Pages
+  ? '/hockey-player-management/' // GitHub Pages
   : '/' // Vercel/Netlify
 
 module.exports = defineConfig({
