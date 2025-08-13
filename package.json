@@ -1,7 +1,7 @@
 {
-  "name": "formulario-asistencias-tltc",
+  "name": "hockey-player-management",
   "version": "1.0.0",
-  "description": "Formulario de control de asistencias para jugadoras de 7ma y 6ta división - TLTC 2025",
+  "description": "Sistema de gestión de jugadores de hockey - TLTC 2025",
   "main": "index.js",
   "scripts": {
     "dev": "vite",
