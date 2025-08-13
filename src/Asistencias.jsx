@@ -41,7 +41,7 @@ const Asistencias = ({ jugadoras: jugadorasProps }) => {
       });
 
       console.log('Consultando asistencias para fecha:', fechaFormateada);
-      const response = await fetch(`${SCRIPT_URL}?${params.toString()}`);
+      const response = await fetch(`${SCRIPT_URL}?action=readByDate&fecha=${fechaFormateada}`);
 
       if (response.ok) {
         const result = await response.json();
