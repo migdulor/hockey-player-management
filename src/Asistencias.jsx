@@ -25,15 +25,22 @@ const Asistencias = ({ jugadoras: jugadorasProps }) => {
     divisionFiltro === 'todas' || jugadora.division === divisionFiltro
   );
 
+  // Convierte YYYY-MM-DD a DD/MM/YYYY
+  const convertirFecha = (fechaIso) => {
+    const [a, m, d] = fechaIso.split('-');
+    return `${d}/${m}/${a}`;
+  };
+
   const cargarAsistenciasFecha = async (fecha) => {
     try {
       setCargandoAsistencias(true);
+      const fechaFormateada = convertirFecha(fecha);
       const params = new URLSearchParams({
         action: 'readByDate',
-        fecha: fecha
+        fecha: fechaFormateada
       });
 
-      console.log('Consultando asistencias para fecha:', fecha);
+      console.log('Consultando asistencias para fecha:', fechaFormateada);
       const response = await fetch(`${SCRIPT_URL}?${params.toString()}`);
 
       if (response.ok) {
@@ -129,9 +136,10 @@ const Asistencias = ({ jugadoras: jugadorasProps }) => {
         return;
       }
       
+      const fechaFormateada = convertirFecha(fechaSeleccionada);
       const params = new URLSearchParams({
         action: 'write',
-        fecha: fechaSeleccionada,
+        fecha: fechaFormateada,
         asistencias: JSON.stringify(asistenciasData)
       });
       
