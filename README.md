@@ -1,10 +1,10 @@
-# Formulario de Asistencias - TLTC 2025
+# Sistema de Gestión de Jugadores de Hockey - TLTC 2025
 
-🏆 **Control de asistencias para jugadoras de 7ma y 6ta división**
+🏆 **Control de asistencias y formaciones para jugadoras de 7ma y 6ta división**
 
 ## 🚀 Demo en vivo
 
-[Ver aplicación](https://migdulor.github.io/formulario-asistencias-tltc/)
+[Ver aplicación](https://migdulor.github.io/hockey-player-management/)
 
 ## ✨ Características
 
@@ -12,7 +12,8 @@
 - 📊 **Conexión directa** con Google Sheets
 - 📱 **Responsive** - funciona en móviles
 - 📈 **Estadísticas** en tiempo real
-- 📋 **Export** a CSV
+- 🏒 **Formaciones tácticas** interactivas
+- 📋 **Export** a texto e imagen
 - 🔐 **Configuración** segura de API
 
 ## 🎯 Funcionalidades
@@ -21,6 +22,19 @@
 - **Presente (P)** - Jugadora asistió
 - **Ausente (A)** - Jugadora no asistió  
 - **Tardanza (T)** - Jugadora llegó tarde
+
+### Estadísticas
+- Gráficos de asistencia por fecha
+- Porcentajes individuales de cada jugadora
+- Comparaciones entre divisiones
+- Filtros por división y rango de fechas
+
+### Formaciones Tácticas
+- Editor visual de formaciones en cancha
+- Asignación de jugadoras a posiciones
+- Sistema de suplentes
+- Export de formaciones a imagen y texto
+- Vista previa profesional
 
 ### Filtros
 - Todas las divisiones
@@ -35,11 +49,11 @@
 
 ## ⚙️ Configuración
 
-### 1. Google Sheets API
-1. Ve a [Google Cloud Console](https://console.cloud.google.com/)
-2. Habilita "Google Sheets API"
-3. Crea una API Key
-4. Configúrala en la aplicación
+### 1. Google Apps Script
+La aplicación usa Google Apps Script como backend. La URL del script está configurada en:
+```javascript
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxIW7BOmLmPrjUsokhsI4p4mi1wdg9JPpPFs8KTUmBhbgetp_RfaLew8RFB6V3BajrpmQ/exec';
+```
 
 ### 2. Permisos del Google Sheet
 1. Hacer el documento público
@@ -50,8 +64,8 @@
 
 ```bash
 # Clonar repositorio
-git clone https://github.com/migdulor/formulario-asistencias-tltc.git
-cd formulario-asistencias-tltc
+git clone https://github.com/migdulor/hockey-player-management.git
+cd hockey-player-management
 
 # Instalar dependencias
 npm install
@@ -68,8 +82,14 @@ npm run build
 **Google Sheets - Hoja "Asistencias":**
 - **Columna A**: IDJugadora
 - **Columna B**: Nombre
-- **Columna C**: División
-- **Columna D en adelante**: Fechas de asistencia
+- **Columna C**: Nombre Corto
+- **Columna D**: División
+- **Columna E en adelante**: Fechas de asistencia
+
+**Google Sheets - Hoja "Partidos":**
+- Formaciones guardadas por fecha
+- Datos del partido (rival, lugar, horarios)
+- Alineaciones titulares y suplentes
 
 ## 🏗️ Tecnologías
 
@@ -77,7 +97,9 @@ npm run build
 - **Vite** - Build tool y dev server
 - **Tailwind CSS** - Framework de estilos
 - **Lucide React** - Iconos
-- **Google Sheets API** - Base de datos
+- **html2canvas** - Export de imágenes
+- **Google Apps Script** - Backend y API
+- **Google Sheets** - Base de datos
 
 ## 👥 Jugadoras - TLTC 2025
 
@@ -127,10 +149,10 @@ npm run build
 La aplicación se despliega automáticamente en GitHub Pages mediante GitHub Actions cuando se hace push a la rama `main`.
 
 ### Estado del despliegue:
-[![Deploy to GitHub Pages](https://github.com/migdulor/formulario-asistencias-tltc/actions/workflows/deploy.yml/badge.svg)](https://github.com/migdulor/formulario-asistencias-tltc/actions/workflows/deploy.yml)
+[![Deploy to GitHub Pages](https://github.com/migdulor/hockey-player-management/actions/workflows/deploy.yml/badge.svg)](https://github.com/migdulor/hockey-player-management/actions/workflows/deploy.yml)
 
 ### URL de producción:
-https://migdulor.github.io/formulario-asistencias-tltc/
+https://migdulor.github.io/hockey-player-management/
 
 ## 🔧 Troubleshooting
 
@@ -139,6 +161,37 @@ Si la aplicación no se despliega:
 1. **Verificar GitHub Actions**: Ve a la pestaña Actions del repositorio
 2. **Habilitar GitHub Pages**: Settings → Pages → Source: GitHub Actions
 3. **Verificar permisos**: El workflow necesita permisos de escritura en Pages
+4. **Verificar Vite config**: El `base` debe coincidir con el nombre del repositorio
+
+### Errores comunes y soluciones:
+
+#### Error: "Cannot resolve module"
+```bash
+npm install
+```
+
+#### Error: "Module not found: @vitejs/plugin-react"
+```bash
+npm install @vitejs/plugin-react --save-dev
+```
+
+#### Error: "html2canvas is not defined"
+```bash
+npm install html2canvas
+```
+
+#### Error en vite.config.js
+Asegúrate de usar sintaxis ES modules:
+```javascript
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+```
+
+## 🔒 Seguridad
+
+- Las APIs están configuradas para solo lectura/escritura específica
+- No se exponen credenciales en el código cliente
+- Google Apps Script maneja la autenticación del lado del servidor
 
 ## 🤝 Contribuir
 
@@ -156,4 +209,4 @@ Este proyecto está bajo la Licencia MIT.
 
 **Desarrollado para TLTC 2025** 🏆
 
-*Sistema de control de asistencias diseñado específicamente para las divisiones juveniles del club.*
+*Sistema integral de gestión de jugadores diseñado específicamente para las divisiones juveniles del club.*
