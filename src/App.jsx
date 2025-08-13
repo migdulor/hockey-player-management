@@ -25,7 +25,8 @@ const App = () => {
             id: index + 1,
             idJugadora: fila[0]?.toString() || '',
             nombre: fila[1] || '',
-            division: fila[2] || ''
+            nombreCorto: fila[2] || '', // Nombre corto desde columna C
+            division: fila[3] || ''
           })).filter(jugadora => jugadora.nombre);
           setJugadoras(jugadorasExtraidas);
         }
@@ -53,10 +54,10 @@ const App = () => {
           </div>
           
           {/* Navegación */}
-          <nav className="mt-4 flex gap-2">
+          <nav className="mt-4 flex gap-2 overflow-x-auto pb-2">
             <button
               onClick={() => setCurrentPage('asistencias')}
-              className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
+              className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors min-w-max ${
                 currentPage === 'asistencias' 
                   ? 'bg-blue-700 text-white' 
                   : 'bg-blue-800 text-blue-200 hover:bg-blue-700'
@@ -67,7 +68,7 @@ const App = () => {
             </button>
             <button
               onClick={() => setCurrentPage('estadisticas')}
-              className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
+              className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors min-w-max ${
                 currentPage === 'estadisticas' 
                   ? 'bg-blue-700 text-white' 
                   : 'bg-blue-800 text-blue-200 hover:bg-blue-700'
@@ -78,7 +79,7 @@ const App = () => {
             </button>
             <button
               onClick={() => setCurrentPage('formacion')}
-              className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
+              className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors min-w-max ${
                 currentPage === 'formacion' 
                   ? 'bg-blue-700 text-white' 
                   : 'bg-blue-800 text-blue-200 hover:bg-blue-700'
@@ -101,7 +102,7 @@ const App = () => {
   );
 };
 
-// Página de Asistencias (tu código actual)
+// Página de Asistencias
 const PaginaAsistencias = ({ jugadoras: jugadorasProps }) => {
   const [fechaSeleccionada, setFechaSeleccionada] = useState(new Date().toISOString().split('T')[0]);
   const [divisionFiltro, setDivisionFiltro] = useState('todas');
@@ -109,14 +110,54 @@ const PaginaAsistencias = ({ jugadoras: jugadorasProps }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [mensaje, setMensaje] = useState('');
   const [jugadoras, setJugadoras] = useState(jugadorasProps);
+  const [cargandoAsistencias, setCargandoAsistencias] = useState(false);
 
   useEffect(() => {
     setJugadoras(jugadorasProps);
+    cargarAsistenciasFecha(fechaSeleccionada);
   }, [jugadorasProps]);
+
+  useEffect(() => {
+    cargarAsistenciasFecha(fechaSeleccionada);
+  }, [fechaSeleccionada]);
 
   const jugadorasFiltradas = jugadoras.filter(jugadora => 
     divisionFiltro === 'todas' || jugadora.division === divisionFiltro
   );
+
+  const cargarAsistenciasFecha = async (fecha) => {
+    try {
+      setCargandoAsistencias(true);
+      const params = new URLSearchParams({
+        action: 'readByDate',
+        fecha: fecha
+      });
+      
+      const response = await fetch(`${SCRIPT_URL}?${params.toString()}`);
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.asistencias) {
+          const nuevasAsistencias = {};
+          Object.keys(result.asistencias).forEach(jugadoraId => {
+            const estado = result.asistencias[jugadoraId];
+            switch (estado) {
+              case 'P': nuevasAsistencias[jugadoraId] = 'presente'; break;
+              case 'A': nuevasAsistencias[jugadoraId] = 'ausente'; break;
+              case 'T': nuevasAsistencias[jugadoraId] = 'tardanza'; break;
+            }
+          });
+          setAsistencias(nuevasAsistencias);
+        } else {
+          setAsistencias({});
+        }
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setCargandoAsistencias(false);
+    }
+  };
 
   const handleAsistenciaChange = (jugadoraId, estado) => {
     setAsistencias(prev => ({
@@ -128,7 +169,7 @@ const PaginaAsistencias = ({ jugadoras: jugadorasProps }) => {
   const marcarTodas = (estado) => {
     const nuevasAsistencias = {};
     jugadorasFiltradas.forEach(jugadora => {
-      nuevasAsistencias[jugadora.id] = estado;
+      nuevasAsistencias[jugadora.idJugadora] = estado;
     });
     setAsistencias(prev => ({ ...prev, ...nuevasAsistencias }));
   };
@@ -140,7 +181,7 @@ const PaginaAsistencias = ({ jugadoras: jugadorasProps }) => {
       
       const asistenciasData = {};
       jugadoras.forEach(jugadora => {
-        const estado = asistencias[jugadora.id];
+        const estado = asistencias[jugadora.idJugadora];
         if (estado) {
           let valorAsistencia = '';
           switch (estado) {
@@ -172,7 +213,7 @@ const PaginaAsistencias = ({ jugadoras: jugadorasProps }) => {
         const result = await response.json();
         if (result.success) {
           setMensaje(`✅ Asistencias guardadas para ${fechaSeleccionada}`);
-          setAsistencias({});
+          // No limpiar asistencias para permitir ediciones adicionales
         }
       }
     } catch (error) {
@@ -205,7 +246,7 @@ const PaginaAsistencias = ({ jugadoras: jugadorasProps }) => {
         </div>
       )}
 
-      <div className="bg-white p-6 rounded-lg shadow">
+      <div className="bg-white p-4 md:p-6 rounded-lg shadow">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -232,16 +273,16 @@ const PaginaAsistencias = ({ jugadoras: jugadorasProps }) => {
               <option value="6ta">6ta División</option>
             </select>
           </div>
-          <div className="flex items-end gap-2">
+          <div className="flex items-end gap-2 col-span-2">
             <button
               onClick={() => marcarTodas('presente')}
-              className="px-3 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+              className="px-3 py-2 bg-green-500 text-white rounded hover:bg-green-600 flex-1"
             >
               ✓ Todas
             </button>
             <button
               onClick={() => marcarTodas('ausente')}
-              className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+              className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 flex-1"
             >
               ✗ Todas
             </button>
@@ -266,60 +307,70 @@ const PaginaAsistencias = ({ jugadoras: jugadorasProps }) => {
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="max-h-96 overflow-y-auto">
-          {jugadorasFiltradas.map((jugadora) => (
-            <div key={jugadora.id} className="px-4 py-3 border-b hover:bg-gray-50 flex justify-between">
-              <div className="flex items-center gap-3">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${
-                  jugadora.division === '7ma' ? 'bg-blue-500' : 'bg-purple-500'
-                }`}>
-                  {jugadora.idJugadora}
-                </div>
-                <div>
-                  <div className="font-medium">{jugadora.nombre}</div>
-                  <div className="text-sm text-gray-500">{jugadora.division}</div>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleAsistenciaChange(jugadora.id, 'presente')}
-                  className={`px-3 py-1 rounded text-sm ${
-                    asistencias[jugadora.id] === 'presente'
-                      ? 'bg-green-500 text-white'
-                      : 'bg-gray-100 hover:bg-green-100'
-                  }`}
-                >
-                  Presente
-                </button>
-                <button
-                  onClick={() => handleAsistenciaChange(jugadora.id, 'tardanza')}
-                  className={`px-3 py-1 rounded text-sm ${
-                    asistencias[jugadora.id] === 'tardanza'
-                      ? 'bg-yellow-500 text-white'
-                      : 'bg-gray-100 hover:bg-yellow-100'
-                  }`}
-                >
-                  Tardanza
-                </button>
-                <button
-                  onClick={() => handleAsistenciaChange(jugadora.id, 'ausente')}
-                  className={`px-3 py-1 rounded text-sm ${
-                    asistencias[jugadora.id] === 'ausente'
-                      ? 'bg-red-500 text-white'
-                      : 'bg-gray-100 hover:bg-red-100'
-                  }`}
-                >
-                  Ausente
-                </button>
-              </div>
+          {cargandoAsistencias ? (
+            <div className="p-8 text-center text-gray-500">
+              Cargando asistencias...
             </div>
-          ))}
+          ) : jugadorasFiltradas.length === 0 ? (
+            <div className="p-8 text-center text-gray-500">
+              No hay jugadoras en esta división
+            </div>
+          ) : (
+            jugadorasFiltradas.map((jugadora) => (
+              <div key={jugadora.id} className="px-4 py-3 border-b hover:bg-gray-50 flex flex-col sm:flex-row justify-between">
+                <div className="flex items-center gap-3 mb-2 sm:mb-0">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${
+                    jugadora.division === '7ma' ? 'bg-blue-500' : 'bg-purple-500'
+                  }`}>
+                    {jugadora.idJugadora}
+                  </div>
+                  <div>
+                    <div className="font-medium">{jugadora.nombre}</div>
+                    <div className="text-sm text-gray-500">{jugadora.division}</div>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => handleAsistenciaChange(jugadora.idJugadora, 'presente')}
+                    className={`px-3 py-1 rounded text-sm flex-1 min-w-[90px] ${
+                      asistencias[jugadora.idJugadora] === 'presente'
+                        ? 'bg-green-500 text-white'
+                        : 'bg-gray-100 hover:bg-green-100'
+                    }`}
+                  >
+                    Presente
+                  </button>
+                  <button
+                    onClick={() => handleAsistenciaChange(jugadora.idJugadora, 'tardanza')}
+                    className={`px-3 py-1 rounded text-sm flex-1 min-w-[90px] ${
+                      asistencias[jugadora.idJugadora] === 'tardanza'
+                        ? 'bg-yellow-500 text-white'
+                        : 'bg-gray-100 hover:bg-yellow-100'
+                    }`}
+                  >
+                    Tardanza
+                  </button>
+                  <button
+                    onClick={() => handleAsistenciaChange(jugadora.idJugadora, 'ausente')}
+                    className={`px-3 py-1 rounded text-sm flex-1 min-w-[90px] ${
+                      asistencias[jugadora.idJugadora] === 'ausente'
+                        ? 'bg-red-500 text-white'
+                        : 'bg-gray-100 hover:bg-red-100'
+                    }`}
+                  >
+                    Ausente
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
       <button
         onClick={guardarEnGoogleSheets}
         disabled={isLoading}
-        className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
+        className="w-full md:w-auto px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
       >
         {isLoading ? 'Guardando...' : 'Guardar en Google Sheets'}
       </button>
@@ -332,9 +383,17 @@ const PaginaEstadisticas = ({ jugadoras }) => {
   const [stats, setStats] = useState({});
   const [divisionFiltro, setDivisionFiltro] = useState('todas');
   const [isLoading, setIsLoading] = useState(false);
+  const [fechaInicio, setFechaInicio] = useState(() => {
+    const date = new Date();
+    date.setMonth(date.getMonth() - 1);
+    return date.toISOString().split('T')[0];
+  });
+  const [fechaFin, setFechaFin] = useState(new Date().toISOString().split('T')[0]);
+  const [asistenciasPorFecha, setAsistenciasPorFecha] = useState([]);
 
   useEffect(() => {
     cargarEstadisticas();
+    cargarAsistenciasPorFecha();
   }, []);
 
   const cargarEstadisticas = async () => {
@@ -353,6 +412,34 @@ const PaginaEstadisticas = ({ jugadoras }) => {
       setIsLoading(false);
     }
   };
+
+  const cargarAsistenciasPorFecha = async () => {
+    try {
+      setIsLoading(true);
+      const params = new URLSearchParams({
+        action: 'getAttendanceByDateRange',
+        start: fechaInicio,
+        end: fechaFin
+      });
+      
+      const response = await fetch(`${SCRIPT_URL}?${params.toString()}`);
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setAsistenciasPorFecha(result.data || []);
+        }
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    cargarAsistenciasPorFecha();
+  }, [fechaInicio, fechaFin]);
 
   const jugadorasFiltradas = jugadoras.filter(j => 
     divisionFiltro === 'todas' || j.division === divisionFiltro
@@ -400,12 +487,48 @@ const PaginaEstadisticas = ({ jugadoras }) => {
   const stats7ma = calcularEstadisticasDivision('7ma');
   const stats6ta = calcularEstadisticasDivision('6ta');
 
+  // Agrupar asistencias por fecha y división
+  const asistenciasAgrupadas = asistenciasPorFecha.reduce((acc, item) => {
+    if (!acc[item.fecha]) {
+      acc[item.fecha] = {
+        '7ma': { presentes: 0, total: 0 },
+        '6ta': { presentes: 0, total: 0 }
+      };
+    }
+    
+    if (item.division === '7ma') {
+      acc[item.fecha]['7ma'].presentes += item.presentes;
+      acc[item.fecha]['7ma'].total += item.total;
+    } else if (item.division === '6ta') {
+      acc[item.fecha]['6ta'].presentes += item.presentes;
+      acc[item.fecha]['6ta'].total += item.total;
+    }
+    
+    return acc;
+  }, {});
+
+  // Convertir a array para gráfico
+  const datosGrafico = Object.keys(asistenciasAgrupadas)
+    .sort()
+    .map(fecha => {
+      const datos = asistenciasAgrupadas[fecha];
+      return {
+        fecha,
+        '7ma': datos['7ma'].total > 0 
+          ? Math.round((datos['7ma'].presentes / datos['7ma'].total) * 100) 
+          : 0,
+        '6ta': datos['6ta'].total > 0 
+          ? Math.round((datos['6ta'].presentes / datos['6ta'].total) * 100) 
+          : 0
+      };
+    });
+
   return (
     <div className="space-y-6">
       <div className="bg-white p-6 rounded-lg shadow">
         <h2 className="text-xl font-bold mb-4">Estadísticas de Asistencia</h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               División
@@ -420,9 +543,83 @@ const PaginaEstadisticas = ({ jugadoras }) => {
               <option value="6ta">6ta División</option>
             </select>
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Fecha Inicio
+            </label>
+            <input
+              type="date"
+              value={fechaInicio}
+              onChange={(e) => setFechaInicio(e.target.value)}
+              className="w-full p-2 border rounded"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Fecha Fin
+            </label>
+            <input
+              type="date"
+              value={fechaFin}
+              onChange={(e) => setFechaFin(e.target.value)}
+              className="w-full p-2 border rounded"
+            />
+          </div>
+          <div className="flex items-end">
+            <button
+              onClick={cargarAsistenciasPorFecha}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 w-full"
+            >
+              Actualizar
+            </button>
+          </div>
         </div>
 
-        {/* Gráfico de barras simple */}
+        {/* Gráfico de asistencias por fecha */}
+        <div className="mb-8">
+          <h3 className="font-bold mb-4">Asistencia por Fecha</h3>
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="flex items-end h-40 gap-2 md:gap-4">
+              {datosGrafico.map((dato, index) => (
+                <div key={index} className="flex-1 flex flex-col items-center">
+                  <div className="text-xs text-gray-500 mb-1">
+                    {dato.fecha.split('-')[2]}
+                  </div>
+                  <div className="flex items-end justify-center gap-1 w-full h-32">
+                    <div 
+                      className="w-full bg-blue-500 rounded-t-md relative"
+                      style={{ height: `${dato['7ma']}%` }}
+                    >
+                      <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-bold text-blue-700">
+                        {dato['7ma']}%
+                      </div>
+                    </div>
+                    <div 
+                      className="w-full bg-purple-500 rounded-t-md relative"
+                      style={{ height: `${dato['6ta']}%` }}
+                    >
+                      <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-bold text-purple-700">
+                        {dato['6ta']}%
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-center gap-4 mt-4">
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-blue-500 mr-2"></div>
+                <span className="text-sm">7ma División</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-purple-500 mr-2"></div>
+                <span className="text-sm">6ta División</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Estadísticas individuales */}
         <div className="space-y-4">
           {jugadorasFiltradas.map(jugadora => {
             const porcentaje = calcularPorcentaje(jugadora.idJugadora);
@@ -444,7 +641,7 @@ const PaginaEstadisticas = ({ jugadoras }) => {
                     {porcentaje > 10 && `${porcentaje}%`}
                   </div>
                 </div>
-                <div className="flex gap-4 mt-2 text-xs text-gray-600">
+                <div className="flex gap-4 mt-2 text-xs text-gray-600 flex-wrap">
                   <span>✓ {stat.presentes} presentes</span>
                   <span>⏰ {stat.tardanzas} tardanzas</span>
                   <span>✗ {stat.ausentes} ausentes</span>
@@ -500,12 +697,14 @@ const PaginaEstadisticas = ({ jugadoras }) => {
 
 // Página de Formación
 const PaginaFormacion = ({ jugadoras }) => {
+  const [divisionFormacion, setDivisionFormacion] = useState('7ma');
   const [formacion, setFormacion] = useState({
     fecha: new Date().toISOString().split('T')[0],
     equipoContrario: '',
     lugar: '',
     horaCitacion: '',
     horaPartido: '',
+    division: '7ma',
     arquera: null,
     defensorDerecha: null,
     defensorIzquierda: null,
@@ -532,6 +731,14 @@ const PaginaFormacion = ({ jugadoras }) => {
   const [posicionSeleccionada, setPosicionSeleccionada] = useState(null);
   const [mensaje, setMensaje] = useState('');
   const [vistaPrevia, setVistaPrevia] = useState(false);
+  const canchaRef = useRef(null);
+
+  useEffect(() => {
+    setFormacion(prev => ({
+      ...prev,
+      division: divisionFormacion
+    }));
+  }, [divisionFormacion]);
 
   const posiciones = [
     { key: 'arquera', nombre: 'Arquera', x: 50, y: 90 },
@@ -552,10 +759,15 @@ const PaginaFormacion = ({ jugadoras }) => {
     nombre: `Suplente ${i + 1}`
   }));
 
-  const jugadorasDisponibles = jugadoras.filter(j => {
-    // Verificar si la jugadora ya está seleccionada en alguna posición
-    return !Object.values(formacion).some(val => val === j.nombre);
-  });
+  const jugadorasDivision = jugadoras.filter(j => 
+    j.division === divisionFormacion && 
+    !Object.values(formacion).some(val => val === j.nombre)
+  );
+
+  const otrasJugadoras = jugadoras.filter(j => 
+    j.division !== divisionFormacion && 
+    !Object.values(formacion).some(val => val === j.nombre)
+  );
 
   const seleccionarJugadora = (posicionKey) => {
     setPosicionSeleccionada(posicionKey);
@@ -601,7 +813,7 @@ const PaginaFormacion = ({ jugadoras }) => {
   };
 
   const exportarTexto = () => {
-    let texto = `FORMACIÓN - TLTC HOCKEY\n`;
+    let texto = `FORMACIÓN - TLTC HOCKEY ${formacion.division.toUpperCase()}\n`;
     texto += `========================\n\n`;
     texto += `Fecha: ${formacion.fecha}\n`;
     texto += `Rival: ${formacion.equipoContrario}\n`;
@@ -630,6 +842,28 @@ const PaginaFormacion = ({ jugadoras }) => {
     window.URL.revokeObjectURL(url);
   };
 
+  const exportarImagen = () => {
+    if (!canchaRef.current) return;
+    
+    setVistaPrevia(true);
+    setTimeout(() => {
+      html2canvas(canchaRef.current).then(canvas => {
+        const image = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.href = image;
+        link.download = `formacion_${formacion.fecha}_${formacion.equipoContrario || 'partido'}.png`;
+        link.click();
+        setVistaPrevia(false);
+      });
+    }, 500);
+  };
+
+  const getNombreCorto = (nombreCompleto) => {
+    if (!nombreCompleto) return '';
+    const jugadora = jugadoras.find(j => j.nombre === nombreCompleto);
+    return jugadora?.nombreCorto || nombreCompleto.split(' ')[0];
+  };
+
   return (
     <div className="space-y-6">
       {mensaje && (
@@ -643,7 +877,20 @@ const PaginaFormacion = ({ jugadoras }) => {
       {/* Datos del partido */}
       <div className="bg-white p-6 rounded-lg shadow">
         <h2 className="text-xl font-bold mb-4">Datos del Partido</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              División
+            </label>
+            <select
+              value={divisionFormacion}
+              onChange={(e) => setDivisionFormacion(e.target.value)}
+              className="w-full p-2 border rounded"
+            >
+              <option value="7ma">7ma División</option>
+              <option value="6ta">6ta División</option>
+            </select>
+          </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Fecha
@@ -706,7 +953,7 @@ const PaginaFormacion = ({ jugadoras }) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Cancha de hockey */}
-        <div className="bg-white p-6 rounded-lg shadow">
+        <div className="bg-white p-6 rounded-lg shadow" ref={canchaRef}>
           <h3 className="text-lg font-bold mb-4">Formación Titular</h3>
           <div className="relative bg-green-500 rounded-lg p-4" style={{ minHeight: '500px' }}>
             {/* Líneas de la cancha */}
@@ -736,7 +983,7 @@ const PaginaFormacion = ({ jugadoras }) => {
                 }`}>
                   {formacion[pos.key] ? (
                     <div className="text-center">
-                      <div className="text-[10px]">{formacion[pos.key]?.split(' ')[0]}</div>
+                      <div className="text-[10px]">{getNombreCorto(formacion[pos.key])}</div>
                     </div>
                   ) : (
                     <div className="text-[10px] text-center">{pos.nombre}</div>
@@ -765,8 +1012,38 @@ const PaginaFormacion = ({ jugadoras }) => {
             <h3 className="text-lg font-bold mb-4">
               {posicionSeleccionada ? `Seleccionar para: ${posiciones.find(p => p.key === posicionSeleccionada)?.nombre || suplentes.find(s => s.key === posicionSeleccionada)?.nombre}` : 'Jugadoras Disponibles'}
             </h3>
-            <div className="max-h-64 overflow-y-auto space-y-2">
-              {jugadorasDisponibles.map(jugadora => (
+            
+            <h4 className="font-medium mb-2">Jugadoras de {divisionFormacion}</h4>
+            <div className="max-h-48 overflow-y-auto space-y-2 mb-4">
+              {jugadorasDivision.length === 0 ? (
+                <div className="text-center text-gray-500 py-2">
+                  Todas las jugadoras están asignadas
+                </div>
+              ) : (
+                jugadorasDivision.map(jugadora => (
+                  <div
+                    key={jugadora.id}
+                    onClick={() => asignarJugadora(jugadora)}
+                    className={`p-2 rounded cursor-pointer flex justify-between items-center ${
+                      posicionSeleccionada 
+                        ? 'hover:bg-blue-100 border border-gray-200'
+                        : 'bg-gray-50 cursor-not-allowed opacity-50'
+                    }`}
+                  >
+                    <span className="text-sm">{jugadora.nombre}</span>
+                    <span className={`text-xs px-2 py-1 rounded ${
+                      jugadora.division === '7ma' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
+                    }`}>
+                      {jugadora.division}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <h4 className="font-medium mb-2">Otras jugadoras</h4>
+            <div className="max-h-48 overflow-y-auto space-y-2">
+              {otrasJugadoras.map(jugadora => (
                 <div
                   key={jugadora.id}
                   onClick={() => asignarJugadora(jugadora)}
@@ -803,7 +1080,7 @@ const PaginaFormacion = ({ jugadoras }) => {
                       : 'bg-gray-100 hover:bg-gray-200'
                   }`}
                 >
-                  {formacion[sup.key] || sup.nombre}
+                  {formacion[sup.key] ? getNombreCorto(formacion[sup.key]) : sup.nombre}
                   {formacion[sup.key] && (
                     <button
                       onClick={(e) => {
@@ -842,7 +1119,7 @@ const PaginaFormacion = ({ jugadoras }) => {
                 <div className="flex items-center justify-between">
                   <div>
                     <h1 className="text-3xl font-bold mb-2">TLTC HOCKEY</h1>
-                    <p className="text-xl">Sub-19</p>
+                    <p className="text-xl">{formacion.division.toUpperCase()}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-2xl font-bold">{formacion.horaPartido || '00:00'}</p>
@@ -908,6 +1185,12 @@ const PaginaFormacion = ({ jugadoras }) => {
                   Exportar como Texto
                 </button>
                 <button
+                  onClick={exportarImagen}
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  Exportar como Imagen
+                </button>
+                <button
                   onClick={() => setVistaPrevia(false)}
                   className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
                 >
@@ -920,7 +1203,7 @@ const PaginaFormacion = ({ jugadoras }) => {
       )}
 
       {/* Botones de acción */}
-      <div className="flex gap-4">
+      <div className="flex flex-wrap gap-4">
         <button
           onClick={guardarFormacion}
           className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
@@ -942,6 +1225,13 @@ const PaginaFormacion = ({ jugadoras }) => {
           <Download className="w-5 h-5" />
           Exportar Texto
         </button>
+        <button
+          onClick={exportarImagen}
+          className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
+        >
+          <Download className="w-5 h-5" />
+          Exportar Imagen
+        </button>
       </div>
 
       {/* Instrucciones */}
@@ -952,7 +1242,7 @@ const PaginaFormacion = ({ jugadoras }) => {
           <li>• Luego selecciona la jugadora de la lista</li>
           <li>• Puedes quitar jugadoras con el botón × </li>
           <li>• Guarda la formación cuando esté completa</li>
-          <li>• Exporta como texto para compartir por WhatsApp</li>
+          <li>• Exporta como texto o imagen para compartir</li>
         </ul>
       </div>
     </div>
