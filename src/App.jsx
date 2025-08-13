@@ -48,7 +48,7 @@ const App = () => {
               <Shield className="w-8 h-8" />
               <div>
                 <h1 className="text-2xl font-bold">TLTC Hockey 2025</h1>
-                <p className="text-blue-200 text-sm">Sistema de Gestión - 7ma y 6ta División</p>
+                <p className="text-blue-200 text-sm">Sistema de Gestión de jugadoras</p>
               </div>
             </div>
           </div>
@@ -813,7 +813,7 @@ const PaginaFormacion = ({ jugadoras }) => {
   };
 
   const exportarTexto = () => {
-    let texto = `FORMACIÓN - TLTC HOCKEY ${formacion.division.toUpperCase()}\n`;
+    let texto = `FORMACIÓN - EQUIPO HOCKEY ${formacion.division.toUpperCase()}\n`;
     texto += `========================\n\n`;
     texto += `Fecha: ${formacion.fecha}\n`;
     texto += `Rival: ${formacion.equipoContrario}\n`;
