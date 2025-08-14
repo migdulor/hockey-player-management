@@ -30,13 +30,17 @@ const App = () => {
           'Content-Type': 'application/json',
         },
       });
-      
-      const responseText = await response.text(); // Primero obtenemos el texto
-      console.log('Respuesta cruda:', responseText); // Debug
+
+      const responseText = await response.text();
+      console.log('Respuesta cruda:', responseText);
+
+      if (!responseText || responseText.trim() === '') {
+        throw new Error('Respuesta vacía del servidor');
+      }
 
       let result;
       try {
-        result = JSON.parse(responseText); // Intentamos parsear el JSON
+        result = JSON.parse(responseText);
       } catch (e) {
         throw new Error(`Error al parsear respuesta: ${responseText}`);
       }
@@ -60,7 +64,7 @@ const App = () => {
         }))
         .filter(jugadora => jugadora.nombre && jugadora.idJugadora);
 
-      console.log(`${jugadorasExtraidas.length} jugadoras cargadas`); // Debug
+      console.log(`${jugadorasExtraidas.length} jugadoras cargadas`);
       setJugadoras(jugadorasExtraidas);
 
     } catch (error) {
