@@ -18,26 +18,35 @@ const App = () => {
   const cargarJugadoras = async () => {
     try {
       setIsLoading(true);
+      console.log('Cargando jugadoras...'); // Debug
       const response = await fetch(`${SCRIPT_URL}?action=read`);
+      
       if (!response.ok) {
-        throw new Error('No se pudo cargar las jugadoras');
+        throw new Error(`Error HTTP: ${response.status}`);
       }
+      
       const result = await response.json();
-      if (result.success && result.data) {
-        const jugadorasExtraidas = result.data.slice(1).map((fila, index) => ({
-          id: index + 1,
-          idJugadora: fila[0]?.toString() || '',
-          nombre: fila[1] || '',
-          nombreCorto: fila[2] || '',
-          division: fila[3] || ''
-        })).filter(jugadora => jugadora.nombre);
+      console.log('Respuesta del servidor:', result); // Debug
+      
+      if (result.success && result.data && Array.isArray(result.data)) {
+        const jugadorasExtraidas = result.data.slice(1)
+          .map((fila, index) => ({
+            id: index + 1,
+            idJugadora: fila[0]?.toString() || '',
+            nombre: fila[1] || '',
+            nombreCorto: fila[2] || '',
+            division: fila[3] || ''
+          }))
+          .filter(jugadora => jugadora.nombre && jugadora.idJugadora);
+        
+        console.log('Jugadoras extraídas:', jugadorasExtraidas); // Debug
         setJugadoras(jugadorasExtraidas);
       } else {
-        throw new Error('Respuesta inválida del servidor');
+        throw new Error('Formato de respuesta inválido');
       }
     } catch (error) {
-      console.error('Error:', error);
-      // Puedes mostrar un mensaje en pantalla si lo deseas
+      console.error('Error al cargar jugadoras:', error);
+      setJugadoras([]); // Asegurarse de que jugadoras esté vacío en caso de error
     } finally {
       setIsLoading(false);
     }
