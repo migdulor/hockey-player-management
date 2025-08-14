@@ -4,12 +4,14 @@ import Asistencias from './Asistencias';
 import ReportesAsistencias from './ReportesAsistencias';
 import FormacionesPartidos from './FormacionesPartidos';
 
+// Actualiza la URL del script con la última versión desplegada
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxG6YJ03xM1VGlQCzmEGz3wkWgnjw9Sy4cKLCA91QPckIxsBbdS9eBh7PUxO6C-vOehug/exec';
 
 const App = () => {
   const [currentPage, setCurrentPage] = useState('asistencias');
   const [jugadoras, setJugadoras] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     cargarJugadoras();
@@ -18,39 +20,86 @@ const App = () => {
   const cargarJugadoras = async () => {
     try {
       setIsLoading(true);
-      console.log('Cargando jugadoras...'); // Debug
-      const response = await fetch(`${SCRIPT_URL}?action=read`);
+      setError(null);
+      console.log('Iniciando carga de jugadoras...');
+
+      const response = await fetch(`${SCRIPT_URL}?action=read`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      });
       
-      if (!response.ok) {
-        throw new Error(`Error HTTP: ${response.status}`);
+      const responseText = await response.text(); // Primero obtenemos el texto
+      console.log('Respuesta cruda:', responseText); // Debug
+
+      let result;
+      try {
+        result = JSON.parse(responseText); // Intentamos parsear el JSON
+      } catch (e) {
+        throw new Error(`Error al parsear respuesta: ${responseText}`);
       }
-      
-      const result = await response.json();
-      console.log('Respuesta del servidor:', result); // Debug
-      
-      if (result.success && result.data && Array.isArray(result.data)) {
-        const jugadorasExtraidas = result.data.slice(1)
-          .map((fila, index) => ({
-            id: index + 1,
-            idJugadora: fila[0]?.toString() || '',
-            nombre: fila[1] || '',
-            nombreCorto: fila[2] || '',
-            division: fila[3] || ''
-          }))
-          .filter(jugadora => jugadora.nombre && jugadora.idJugadora);
-        
-        console.log('Jugadoras extraídas:', jugadorasExtraidas); // Debug
-        setJugadoras(jugadorasExtraidas);
-      } else {
-        throw new Error('Formato de respuesta inválido');
+
+      if (!result.success) {
+        throw new Error(result.error || 'Error desconocido en la respuesta');
       }
+
+      if (!result.data || !Array.isArray(result.data)) {
+        throw new Error('Formato de datos inválido');
+      }
+
+      const jugadorasExtraidas = result.data
+        .slice(1)
+        .map((fila, index) => ({
+          id: index + 1,
+          idJugadora: fila[0]?.toString() || '',
+          nombre: fila[1] || '',
+          nombreCorto: fila[2] || '',
+          division: fila[3] || ''
+        }))
+        .filter(jugadora => jugadora.nombre && jugadora.idJugadora);
+
+      console.log(`${jugadorasExtraidas.length} jugadoras cargadas`); // Debug
+      setJugadoras(jugadorasExtraidas);
+
     } catch (error) {
-      console.error('Error al cargar jugadoras:', error);
-      setJugadoras([]); // Asegurarse de que jugadoras esté vacío en caso de error
+      console.error('Error detallado:', error);
+      setError(error.message);
+      setJugadoras([]);
     } finally {
       setIsLoading(false);
     }
   };
+
+  // Mostrar estado de carga o error
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Cargando jugadoras...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center p-6 bg-white rounded-lg shadow-lg max-w-md">
+          <div className="text-red-500 text-xl mb-4">❌ Error al cargar datos</div>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button 
+            onClick={cargarJugadoras}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
